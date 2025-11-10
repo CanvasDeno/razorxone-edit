@@ -4,7 +4,7 @@ import { EditorTabs } from "@/components/EditorTabs";
 import { CodeEditor } from "@/components/CodeEditor";
 import { FileNode } from "@/types/file";
 import { Button } from "@/components/ui/button";
-import { Download, Code2 } from "lucide-react";
+import { Download, Code2, Upload } from "lucide-react";
 import {
   createFileNode,
   findNodeByPath,
@@ -12,8 +12,10 @@ import {
   updateNodeContent,
   addNodeToParent,
   exportToZip,
+  importFromZip,
 } from "@/utils/fileUtils";
 import { toast } from "sonner";
+import { useRef } from "react";
 
 const Index = () => {
   const [files, setFiles] = useState<FileNode[]>([
@@ -43,6 +45,7 @@ const Index = () => {
 
   const [openFiles, setOpenFiles] = useState<FileNode[]>([]);
   const [activeFile, setActiveFile] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (file: FileNode) => {
     if (file.type === 'folder') return;
@@ -112,6 +115,29 @@ const Index = () => {
     }
   };
 
+  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.endsWith('.zip')) {
+      toast.error('Please select a .zip file');
+      return;
+    }
+
+    try {
+      const importedFiles = await importFromZip(file);
+      setFiles((prevFiles) => [...prevFiles, ...importedFiles]);
+      toast.success('Project imported successfully!');
+    } catch (error) {
+      toast.error('Failed to import project');
+      console.error(error);
+    }
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const activeFileNode = activeFile ? findNodeByPath(files, activeFile) : null;
 
   return (
@@ -121,10 +147,23 @@ const Index = () => {
           <Code2 className="w-5 h-5 text-primary" />
           <h1 className="font-semibold text-lg">Razor Editor</h1>
         </div>
-        <Button onClick={handleExport} size="sm" className="gap-2">
-          <Download className="w-4 h-4" />
-          Export .zip
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => fileInputRef.current?.click()} size="sm" variant="outline" className="gap-2">
+            <Upload className="w-4 h-4" />
+            Import .zip
+          </Button>
+          <Button onClick={handleExport} size="sm" className="gap-2">
+            <Download className="w-4 h-4" />
+            Export .zip
+          </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".zip"
+            onChange={handleImport}
+            className="hidden"
+          />
+        </div>
       </header>
 
       <div className="flex flex-1 overflow-hidden">

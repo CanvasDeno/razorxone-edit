@@ -86,3 +86,93 @@ export const exportToZip = async (files: FileNode[], projectName: string = 'proj
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 };
+
+const processZipEntry = async (
+  zip: JSZip,
+  path: string,
+  entry: JSZip.JSZipObject,
+  parentPath: string = ''
+): Promise<FileNode> => {
+  const name = entry.name.split('/').filter(Boolean).pop() || entry.name;
+  const fullPath = parentPath ? `${parentPath}/${name}` : `/${name}`;
+  
+  if (entry.dir) {
+    return {
+      id: Math.random().toString(36).substr(2, 9),
+      name,
+      type: 'folder',
+      path: fullPath,
+      children: [],
+    };
+  }
+
+  const isImage = /\.(svg|png|jpg|jpeg|webp)$/i.test(name);
+  let content: string;
+
+  if (isImage) {
+    const blob = await entry.async('blob');
+    content = URL.createObjectURL(blob);
+  } else {
+    content = await entry.async('text');
+  }
+
+  return {
+    id: Math.random().toString(36).substr(2, 9),
+    name,
+    type: 'file',
+    path: fullPath,
+    content,
+  };
+};
+
+export const importFromZip = async (file: File): Promise<FileNode[]> => {
+  const zip = await JSZip.loadAsync(file);
+  const fileMap = new Map<string, FileNode>();
+  const rootNodes: FileNode[] = [];
+
+  // Process all entries
+  for (const [path, entry] of Object.entries(zip.files)) {
+    if (entry.name.startsWith('__MACOSX/') || entry.name.startsWith('.')) continue;
+    
+    const parts = entry.name.split('/').filter(Boolean);
+    if (parts.length === 0) continue;
+
+    let currentPath = '';
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i];
+      const parentPath = currentPath;
+      currentPath = currentPath ? `${currentPath}/${part}` : `/${part}`;
+
+      if (!fileMap.has(currentPath)) {
+        const isLastPart = i === parts.length - 1;
+        const isFolder = entry.dir || !isLastPart;
+
+        let node: FileNode;
+        if (isFolder) {
+          node = {
+            id: Math.random().toString(36).substr(2, 9),
+            name: part,
+            type: 'folder',
+            path: currentPath,
+            children: [],
+          };
+        } else {
+          node = await processZipEntry(zip, path, entry, parentPath);
+        }
+
+        fileMap.set(currentPath, node);
+
+        if (parentPath) {
+          const parent = fileMap.get(parentPath);
+          if (parent && parent.children) {
+            parent.children.push(node);
+          }
+        } else {
+          rootNodes.push(node);
+        }
+      }
+    }
+  }
+
+  return rootNodes;
+};

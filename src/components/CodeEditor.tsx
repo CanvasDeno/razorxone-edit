@@ -46,6 +46,38 @@ export const CodeEditor = ({ file, onChange }: CodeEditorProps) => {
     return languageMap[ext || ''] || 'plaintext';
   };
 
+  const isBinaryFile = (filename: string) => {
+    const ext = filename.split('.').pop()?.toLowerCase();
+    const binaryExtensions = ['exe', 'deb', 'pkg', 'img', 'bin', 'dmg', 'iso'];
+    return binaryExtensions.includes(ext || '');
+  };
+
+  const isImageFile = (filename: string) => {
+    const ext = filename.split('.').pop()?.toLowerCase();
+    const imageExtensions = ['svg', 'png', 'jpg', 'jpeg', 'webp'];
+    return imageExtensions.includes(ext || '');
+  };
+
+  if (isBinaryFile(file.name)) {
+    return (
+      <div className="flex items-center justify-center h-full bg-editor text-muted-foreground">
+        <p>Binary file - preview not available</p>
+      </div>
+    );
+  }
+
+  if (isImageFile(file.name)) {
+    return (
+      <div className="flex items-center justify-center h-full bg-editor p-4">
+        <img 
+          src={file.content || ''} 
+          alt={file.name}
+          className="max-w-full max-h-full object-contain"
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="h-full">
       <Editor
