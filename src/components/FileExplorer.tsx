@@ -1,6 +1,7 @@
-import { ChevronRight, ChevronDown, File, Folder, FolderOpen, Plus, Trash2 } from "lucide-react";
+import { ChevronRight, ChevronDown, File, Folder, FolderOpen, Plus, Trash2, Edit, Search } from "lucide-react";
 import { FileNode } from "@/types/file";
 import { Button } from "./ui/button";
+import { Input } from "./ui/input";
 import { useState } from "react";
 import {
   ContextMenu,
@@ -16,6 +17,10 @@ interface FileExplorerProps {
   onCreateFile: (parentPath: string) => void;
   onCreateFolder: (parentPath: string) => void;
   onDelete: (path: string) => void;
+  onRename: (path: string) => void;
+  searchResults: FileNode[];
+  searchQuery: string;
+  onSearchChange: (query: string) => void;
 }
 
 export const FileExplorer = ({
@@ -25,6 +30,10 @@ export const FileExplorer = ({
   onCreateFile,
   onCreateFolder,
   onDelete,
+  onRename,
+  searchResults,
+  searchQuery,
+  onSearchChange,
 }: FileExplorerProps) => {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(['/']));
 
@@ -77,10 +86,16 @@ export const FileExplorer = ({
                 New Folder
               </ContextMenuItem>
               {node.path !== '/' && (
-                <ContextMenuItem onClick={() => onDelete(node.path)} className="cursor-pointer text-destructive">
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Delete
-                </ContextMenuItem>
+                <>
+                  <ContextMenuItem onClick={() => onRename(node.path)} className="cursor-pointer">
+                    <Edit className="w-4 h-4 mr-2" />
+                    Rename
+                  </ContextMenuItem>
+                  <ContextMenuItem onClick={() => onDelete(node.path)} className="cursor-pointer text-destructive">
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete
+                  </ContextMenuItem>
+                </>
               )}
             </ContextMenuContent>
           </ContextMenu>
@@ -108,6 +123,10 @@ export const FileExplorer = ({
           </div>
         </ContextMenuTrigger>
         <ContextMenuContent className="bg-card border-border">
+          <ContextMenuItem onClick={() => onRename(node.path)} className="cursor-pointer">
+            <Edit className="w-4 h-4 mr-2" />
+            Rename
+          </ContextMenuItem>
           <ContextMenuItem onClick={() => onDelete(node.path)} className="cursor-pointer text-destructive">
             <Trash2 className="w-4 h-4 mr-2" />
             Delete
@@ -116,6 +135,8 @@ export const FileExplorer = ({
       </ContextMenu>
     );
   };
+
+  const displayFiles = searchQuery ? searchResults : files;
 
   return (
     <div className="h-full bg-sidebar border-r border-border flex flex-col">
@@ -140,8 +161,20 @@ export const FileExplorer = ({
           </Button>
         </div>
       </div>
+      <div className="p-2 border-b border-border">
+        <div className="relative">
+          <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="Search files..."
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+            className="pl-8 h-8 bg-background border-border"
+          />
+        </div>
+      </div>
       <div className="flex-1 overflow-auto py-2">
-        {files.map((node) => renderNode(node, 0))}
+        {displayFiles.map((node) => renderNode(node, 0))}
       </div>
     </div>
   );

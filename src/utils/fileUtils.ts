@@ -61,6 +61,38 @@ export const addNodeToParent = (nodes: FileNode[], parentPath: string, newNode: 
   });
 };
 
+export const renameNode = (nodes: FileNode[], oldPath: string, newName: string): FileNode[] => {
+  return nodes.map((node) => {
+    if (node.path === oldPath) {
+      const pathParts = oldPath.split('/');
+      pathParts[pathParts.length - 1] = newName;
+      const newPath = pathParts.join('/');
+      return { ...node, name: newName, path: newPath };
+    }
+    if (node.children) {
+      return { ...node, children: renameNode(node.children, oldPath, newName) };
+    }
+    return node;
+  });
+};
+
+export const searchFiles = (nodes: FileNode[], query: string): FileNode[] => {
+  const results: FileNode[] = [];
+  const search = query.toLowerCase();
+
+  const traverse = (node: FileNode) => {
+    if (node.name.toLowerCase().includes(search)) {
+      results.push(node);
+    }
+    if (node.children) {
+      node.children.forEach(traverse);
+    }
+  };
+
+  nodes.forEach(traverse);
+  return results;
+};
+
 const addToZip = (zip: JSZip, node: FileNode, basePath: string = '') => {
   const nodePath = basePath ? `${basePath}/${node.name}` : node.name;
   

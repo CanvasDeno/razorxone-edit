@@ -13,6 +13,8 @@ import {
   addNodeToParent,
   exportToZip,
   importFromZip,
+  renameNode,
+  searchFiles,
 } from "@/utils/fileUtils";
 import { toast } from "sonner";
 import { useRef } from "react";
@@ -46,6 +48,8 @@ const Index = () => {
   const [openFiles, setOpenFiles] = useState<FileNode[]>([]);
   const [activeFile, setActiveFile] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<FileNode[]>([]);
 
   const handleFileSelect = (file: FileNode) => {
     if (file.type === 'folder') return;
@@ -105,6 +109,27 @@ const Index = () => {
     toast.success('Deleted successfully');
   };
 
+  const handleRename = (path: string) => {
+    const node = findNodeByPath(files, path);
+    if (!node) return;
+
+    const newName = prompt(`Rename ${node.type}:`, node.name);
+    if (!newName || newName === node.name) return;
+
+    setFiles((prevFiles) => renameNode(prevFiles, path, newName));
+    toast.success(`Renamed to ${newName}`);
+  };
+
+  const handleSearchChange = (query: string) => {
+    setSearchQuery(query);
+    if (query.trim()) {
+      const results = searchFiles(files, query);
+      setSearchResults(results);
+    } else {
+      setSearchResults([]);
+    }
+  };
+
   const handleExport = async () => {
     try {
       await exportToZip(files, 'razor-project');
@@ -145,7 +170,7 @@ const Index = () => {
       <header className="h-12 border-b border-border flex items-center justify-between px-4 bg-card">
         <div className="flex items-center gap-2">
           <Code2 className="w-5 h-5 text-primary" />
-          <h1 className="font-semibold text-lg">Razor Editor</h1>
+          <h1 className="font-semibold text-lg">RazorXone edit</h1>
         </div>
         <div className="flex gap-2">
           <Button onClick={() => fileInputRef.current?.click()} size="sm" variant="outline" className="gap-2">
@@ -175,6 +200,10 @@ const Index = () => {
             onCreateFile={handleCreateFile}
             onCreateFolder={handleCreateFolder}
             onDelete={handleDelete}
+            onRename={handleRename}
+            searchResults={searchResults}
+            searchQuery={searchQuery}
+            onSearchChange={handleSearchChange}
           />
         </div>
 
