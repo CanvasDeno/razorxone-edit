@@ -39,6 +39,9 @@ export const CodeEditor = ({ file, onChange }: CodeEditorProps) => {
       xml: 'xml',
       yaml: 'yaml',
       yml: 'yaml',
+      razor: 'razor',
+      cshtml: 'razor',
+      vbhtml: 'razor',
     };
     return languageMap[ext || ''] || 'plaintext';
   };
