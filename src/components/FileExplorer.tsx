@@ -156,8 +156,6 @@ export const FileExplorer = ({
     );
   };
 
-  const displayFiles = searchQuery ? searchResults : files;
-
   return (
     <div className="h-full bg-sidebar border-r border-border flex flex-col">
       <div className="p-3 border-b border-border flex items-center justify-between">
@@ -194,7 +192,7 @@ export const FileExplorer = ({
         </div>
       </div>
       <div className="flex-1 overflow-auto py-2">
-        {displayFiles.map((node) => renderNode(node, 0))}
+        {files.map((node) => renderNode(node, 0))}
       </div>
       <input
         ref={fileInputRef}

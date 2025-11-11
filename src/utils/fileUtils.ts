@@ -76,11 +76,36 @@ export const renameNode = (nodes: FileNode[], oldPath: string, newName: string):
   });
 };
 
+const HIDDEN_EXTENSIONS = ['.dll', '.ini', '.sys', '.chk'];
+
+export const shouldHideFile = (filename: string): boolean => {
+  return HIDDEN_EXTENSIONS.some(ext => filename.toLowerCase().endsWith(ext));
+};
+
+export const filterHiddenFiles = (nodes: FileNode[]): FileNode[] => {
+  return nodes
+    .filter(node => {
+      if (node.type === 'file' && shouldHideFile(node.name)) {
+        return false;
+      }
+      return true;
+    })
+    .map(node => {
+      if (node.children) {
+        return { ...node, children: filterHiddenFiles(node.children) };
+      }
+      return node;
+    });
+};
+
 export const searchFiles = (nodes: FileNode[], query: string): FileNode[] => {
   const results: FileNode[] = [];
   const search = query.toLowerCase();
 
   const traverse = (node: FileNode) => {
+    if (node.type === 'file' && shouldHideFile(node.name)) {
+      return;
+    }
     if (node.name.toLowerCase().includes(search)) {
       results.push(node);
     }

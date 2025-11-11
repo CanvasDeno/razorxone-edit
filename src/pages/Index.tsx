@@ -15,6 +15,7 @@ import {
   importFromZip,
   renameNode,
   searchFiles,
+  filterHiddenFiles,
 } from "@/utils/fileUtils";
 import { toast } from "sonner";
 import { useRef } from "react";
@@ -223,6 +224,9 @@ const Index = () => {
   };
 
   const activeFileNode = activeFile ? findNodeByPath(files, activeFile) : null;
+  const filteredFiles = filterHiddenFiles(files);
+  const filteredSearchResults = filterHiddenFiles(searchResults);
+  const displayFiles = searchQuery ? filteredSearchResults : filteredFiles;
 
   return (
     <div className="h-screen flex flex-col bg-background">
@@ -253,7 +257,7 @@ const Index = () => {
       <div className="flex flex-1 overflow-hidden">
         <div className="w-64 shrink-0">
           <FileExplorer
-            files={files}
+            files={displayFiles}
             activeFile={activeFile}
             onFileSelect={handleFileSelect}
             onCreateFile={handleCreateFile}
