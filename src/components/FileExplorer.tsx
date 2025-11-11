@@ -1,13 +1,14 @@
-import { ChevronRight, ChevronDown, File, Folder, FolderOpen, Plus, Trash2, Edit, Search } from "lucide-react";
+import { ChevronRight, ChevronDown, File, Folder, FolderOpen, Plus, Trash2, Edit, Search, Download, Upload } from "lucide-react";
 import { FileNode } from "@/types/file";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuTrigger,
+  ContextMenuSeparator,
 } from "@/components/ui/context-menu";
 
 interface FileExplorerProps {
@@ -18,6 +19,8 @@ interface FileExplorerProps {
   onCreateFolder: (parentPath: string) => void;
   onDelete: (path: string) => void;
   onRename: (path: string) => void;
+  onImportFile: (event: React.ChangeEvent<HTMLInputElement>, parentPath: string) => void;
+  onExportFile: (path: string) => void;
   searchResults: FileNode[];
   searchQuery: string;
   onSearchChange: (query: string) => void;
@@ -31,11 +34,15 @@ export const FileExplorer = ({
   onCreateFolder,
   onDelete,
   onRename,
+  onImportFile,
+  onExportFile,
   searchResults,
   searchQuery,
   onSearchChange,
 }: FileExplorerProps) => {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(['/']));
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [importTargetPath, setImportTargetPath] = useState<string>('/');
 
   const toggleFolder = (path: string) => {
     const newExpanded = new Set(expandedFolders);
@@ -85,8 +92,16 @@ export const FileExplorer = ({
                 <Folder className="w-4 h-4 mr-2" />
                 New Folder
               </ContextMenuItem>
+              <ContextMenuItem onClick={() => {
+                setImportTargetPath(node.path);
+                fileInputRef.current?.click();
+              }} className="cursor-pointer">
+                <Upload className="w-4 h-4 mr-2" />
+                Import File
+              </ContextMenuItem>
               {node.path !== '/' && (
                 <>
+                  <ContextMenuSeparator />
                   <ContextMenuItem onClick={() => onRename(node.path)} className="cursor-pointer">
                     <Edit className="w-4 h-4 mr-2" />
                     Rename
@@ -123,6 +138,11 @@ export const FileExplorer = ({
           </div>
         </ContextMenuTrigger>
         <ContextMenuContent className="bg-card border-border">
+          <ContextMenuItem onClick={() => onExportFile(node.path)} className="cursor-pointer">
+            <Download className="w-4 h-4 mr-2" />
+            Export File
+          </ContextMenuItem>
+          <ContextMenuSeparator />
           <ContextMenuItem onClick={() => onRename(node.path)} className="cursor-pointer">
             <Edit className="w-4 h-4 mr-2" />
             Rename
@@ -176,6 +196,12 @@ export const FileExplorer = ({
       <div className="flex-1 overflow-auto py-2">
         {displayFiles.map((node) => renderNode(node, 0))}
       </div>
+      <input
+        ref={fileInputRef}
+        type="file"
+        className="hidden"
+        onChange={(e) => onImportFile(e, importTargetPath)}
+      />
     </div>
   );
 };

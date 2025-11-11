@@ -163,6 +163,65 @@ const Index = () => {
     }
   };
 
+  const handleImportFile = async (event: React.ChangeEvent<HTMLInputElement>, parentPath: string) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const isImage = /\.(svg|png|jpg|jpeg|webp)$/i.test(file.name);
+      let content: string;
+
+      if (isImage) {
+        content = URL.createObjectURL(file);
+      } else {
+        content = await file.text();
+      }
+
+      const newFile = createFileNode(file.name, 'file', parentPath);
+      newFile.content = content;
+      setFiles((prevFiles) => addNodeToParent(prevFiles, parentPath, newFile));
+      toast.success(`Imported ${file.name}`);
+    } catch (error) {
+      toast.error('Failed to import file');
+      console.error(error);
+    }
+  };
+
+  const handleExportFile = (path: string) => {
+    const node = findNodeByPath(files, path);
+    if (!node || node.type !== 'file') return;
+
+    const isImage = /\.(svg|png|jpg|jpeg|webp)$/i.test(node.name);
+    let blob: Blob;
+
+    if (isImage && node.content?.startsWith('blob:')) {
+      fetch(node.content)
+        .then(res => res.blob())
+        .then(b => {
+          const url = URL.createObjectURL(b);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = node.name;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        });
+      return;
+    }
+
+    blob = new Blob([node.content || ''], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = node.name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success(`Exported ${node.name}`);
+  };
+
   const activeFileNode = activeFile ? findNodeByPath(files, activeFile) : null;
 
   return (
@@ -201,6 +260,8 @@ const Index = () => {
             onCreateFolder={handleCreateFolder}
             onDelete={handleDelete}
             onRename={handleRename}
+            onImportFile={handleImportFile}
+            onExportFile={handleExportFile}
             searchResults={searchResults}
             searchQuery={searchQuery}
             onSearchChange={handleSearchChange}
